@@ -1,0 +1,38 @@
+# Секреты и переменные окружения
+.env
+.env.*
+!.env.example
+
+# Ключи и токены
+credentials.json
+client_secret*.json
+service-account*.json
+token.json
+*.pem
+*.key
+
+# n8n и локальные базы
+*.sqlite
+database.sqlite
+
+# Зависимости
+node_modules/
+
+# Логи
+*.log
+logs/
+
+# Временные файлы
+tmp/
+temp/
+*.tmp
+
+# Архивы
+*.zip
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Локальные настройки VS Code
+.vscode/settings.json
