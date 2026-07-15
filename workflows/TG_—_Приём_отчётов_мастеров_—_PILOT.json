@@ -1264,8 +1264,12 @@
           ]
         },
         "columns": {
-          "mappingMode": "autoMapInputData",
-          "value": {},
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "validation_status": "={{ $json.validation_status }}",
+            "incomplete_at": "={{ $json.incomplete_at }}"
+          },
           "matchingColumns": [],
           "schema": [
             {
@@ -1436,7 +1440,7 @@
     {
       "parameters": {
         "chatId": "={{ $json.chat_id }}",
-        "text": "={{ $json.message_to_master }}",
+        "text": "={{ $('Подготовить неполный отчёт').first().json.message_to_master }}",
         "additionalFields": {
           "appendAttribution": false
         }
@@ -1494,7 +1498,7 @@
           "value": {
             "status": "={{ $json.status }}",
             "updated_at": "={{ $json.updated_at }}",
-            "report_key": "== {{ $json.report_key }}"
+            "report_key": "={{ $json.report_key }}"
           },
           "matchingColumns": [],
           "schema": [
