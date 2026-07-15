@@ -1,0 +1,2147 @@
+{
+  "name": "TG — Приём отчётов мастеров — PILOT",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        128
+      ],
+      "id": "872178e6-a98e-41cd-949f-da365490d19b",
+      "name": "Telegram Trigger",
+      "webhookId": "440fa35f-927d-4757-bec9-531d8594db6d",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        16
+      ],
+      "id": "9e39ab41-d02f-4cf1-82d2-d8b51907f37c",
+      "name": "Get a file",
+      "webhookId": "f236715c-8b6b-4a15-b828-f7b74320b21e",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const source = $('Telegram Trigger').item.json;\nconst message = source.message ?? {};\n\nconst photos = Array.isArray(message.photo) ? message.photo : [];\nconst largestPhoto = photos[photos.length - 1] ?? {};\n\nconst chatId = String(message.chat?.id ?? '');\nconst userId = String(message.from?.id ?? '');\nconst mediaGroupId =\n  message.media_group_id !== undefined\n    ? String(message.media_group_id)\n    : '';\n\nconst messageId = message.message_id ?? 0;\nconst updateId = source.update_id ?? 0;\nconst isAlbum = mediaGroupId !== '';\n\nconst reportKey = isAlbum\n  ? `tg:${chatId}:album:${mediaGroupId}`\n  : `tg:${chatId}:single:${messageId}`;\n\nreturn {\n  json: {\n    part_key: `tg:update:${updateId}`,\n    update_id: updateId,\n    message_id: messageId,\n    chat_id: chatId,\n    user_id: userId,\n    media_group_id: mediaGroupId,\n    report_key: reportKey,\n    caption: message.caption ?? '',\n    file_id: largestPhoto.file_id ?? '',\n    file_unique_id: largestPhoto.file_unique_id ?? '',\n    file_size: largestPhoto.file_size ?? 0,\n    received_at: new Date().toISOString(),\nstatus: 'telegram_received',\n    file_url: '',\n    is_album: isAlbum,\n  },\n  binary: $input.item.binary,\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        16
+      ],
+      "id": "2a602758-2ed2-452c-a1c8-504736835dff",
+      "name": "Prepare report part"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bkJEucmFZpr2GrMd",
+          "mode": "list",
+          "cachedResultName": "tg_report_parts_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/bkJEucmFZpr2GrMd"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "part_key",
+              "keyValue": "={{ $json.part_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "is_album": false
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "part_key",
+              "displayName": "part_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "update_id",
+              "displayName": "update_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "media_group_id",
+              "displayName": "media_group_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_unique_id",
+              "displayName": "file_unique_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_size",
+              "displayName": "file_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_url",
+              "displayName": "file_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "is_album",
+              "displayName": "is_album",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        16
+      ],
+      "id": "24c667f2-9cb7-46e6-ae48-f06124e38b74",
+      "name": "Save report part"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = $json.message ?? {}\nconst callbackQuery = $json.callback_query ?? {}\nconst callbackMessage = callbackQuery.message ?? {}\n\nconst text = String(message.text ?? '').trim()\nconst callbackData = String(callbackQuery.data ?? '').trim()\n\nlet route = 'other'\n\n// Сначала проверяем нажатия на кнопки\nif (callbackData === 'report_add_text') {\n  route = 'report_add_text'\n} else if (callbackData === 'report_incomplete') {\n  route = 'report_incomplete'\n}\n\n// Затем обычные сообщения\nelse if (Array.isArray(message.photo) && message.photo.length > 0) {\n  route = 'photo'\n} else if (text === '/start') {\n  route = 'start'\n} else if (text === '➕ Новый отчёт') {\n  route = 'new_report'\n} else if (text === 'ℹ️ Как отправить отчёт') {\n  route = 'instructions'\n} else if (text !== '') {\n  route = 'text'\n}\n\nconst chatId = String(\n  message.chat?.id ??\n  callbackMessage.chat?.id ??\n  ''\n)\n\nconst userId = String(\n  message.from?.id ??\n  callbackQuery.from?.id ??\n  ''\n)\n\nreturn {\n  json: {\n    ...$json,\n    route,\n    chat_id: chatId,\n    user_id: userId,\n    incoming_text: text,\n    callback_data: callbackData,\n    callback_query_id: String(callbackQuery.id ?? ''),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        128
+      ],
+      "id": "926c0fd7-104a-417a-afd8-01a6dfeec6f3",
+      "name": "Determine incoming action"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4bd81c00-76f7-4cb1-912f-e61b0abcd679",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "photo"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dac916bf-d40e-4a71-a5e7-8a5792b4ab3d",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4b561997-f533-4d55-b2f2-1ad2e198c617",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "new_report",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "new_report"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3d88cbee-e819-43b1-bc1e-664edeeffe09",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "instructions",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "instructions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dc430dfc-ff79-4b35-a451-63ae644c28ac",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "report_add_text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "69e06b88-6c14-4a49-aedf-5e3a82fae859",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "report_incomplete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e11ce74e-d3c1-4c97-8d8e-37f2fc073b20",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        416
+      ],
+      "id": "c266e2c5-ed98-4890-bf31-225168774b24",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=Добро пожаловать в бот отчётов мастеров Сети студий маникюра Богелика\n\n👋  Здесь вы можете отправить отчёт по выполненной работе и получить результат проверки. Перед отправкой нажмите «Новый отчёт»  \n\nЕсли отправляете отчёт впервые, сначала посмотрите инструкцию",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "➕ Новый отчёт",
+                    "additionalFields": {}
+                  },
+                  {
+                    "text": "ℹ️ Как отправить отчёт",
+                    "additionalFields": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "replyKeyboardOptions": {
+          "resize_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        160
+      ],
+      "id": "af90606a-09f8-469b-a180-0da22a2f795a",
+      "name": "Send start menu",
+      "webhookId": "99893021-bd55-4ebf-b9b8-97c259c7499e",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = $json.message ?? {}\n\nconst chatId = String(message.chat?.id ?? '')\nconst userId = String(message.from?.id ?? '')\n\nconst now = new Date()\nconst expiresAt = new Date(now.getTime() + 30 * 60 * 1000)\n\nreturn {\n  json: {\n    session_key: `tg:${chatId}:user:${userId}`,\n    chat_id: chatId,\n    user_id: userId,\n    status: 'awaiting_report',\n    started_at: now.toISOString(),\n    expires_at: expiresAt.toISOString(),\n    report_key: '',\n    updated_at: now.toISOString(),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        320
+      ],
+      "id": "e1d39ed9-1651-4870-9992-64d64dd254ad",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_key",
+              "displayName": "session_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "started_at",
+              "displayName": "started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        784,
+        320
+      ],
+      "id": "b7fa3edd-e0a2-4027-8d2d-e3fd841248c7",
+      "name": "Open report session"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "=✅ Новый отчёт открыт\n\nОтправьте фото одним альбомом:\n\n1. До процедуры — две руки\n2. До процедуры — большие пальцы\n\n3. После снятия — первая рука\n4. После снятия — вторая рука\n5. После снятия — большие пальцы\n\n6. После покрытия — две руки\n7. После покрытия — большие пальцы\n8. Фото покрытия / цвета / номера лака\n\n<blockquote expandable>Текст отчёта можно написать так:\n\nЖП\nМария Ф.\nЕкатерина Комелутина\n\nДо — наше покрытие, носка 4 недели, есть отслойки\n\nПосле снятия ногтевая пластина без повреждений\nБаза Sota\nРемонтов нет\nПокрытие Luxio 182\n\n70 минут</blockquote>\n\nВажно: на фото должен быть хорошо виден каждый палец\n\n⏱ Отправьте отчёт в течение 30 минут",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        320
+      ],
+      "id": "bac39aef-bf51-4bbd-b95c-36feee97701d",
+      "name": "Confirm report session",
+      "webhookId": "20038de7-63f6-43dc-b6ba-773405b27633",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = $json.message ?? {}\n\nconst chatId = String(message.chat?.id ?? '')\nconst userId = String(message.from?.id ?? '')\n\nreturn {\n  json: {\n    ...$json,\n    session_key: `tg:${chatId}:user:${userId}`,\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        16
+      ],
+      "id": "29c05b3d-3a6c-4460-8923-5313578b4ed3",
+      "name": "Prepare photo session check1"
+    },
+    {
+      "parameters": {
+        "operation": "rowExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "awaiting_report"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        16
+      ],
+      "id": "bb32d154-a367-44bf-853e-ead336ac789b",
+      "name": "Check active report session"
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "awaiting_report"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        -128
+      ],
+      "id": "6d7af8eb-1de0-4bab-8ff0-affae26218b3",
+      "name": "No active report session"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Сначала нажмите «➕ Новый отчёт», а затем отправьте фотографии одним альбомом",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        -128
+      ],
+      "id": "84519947-c16c-47d9-a830-1af2fe6b975c",
+      "name": "Ask to start report",
+      "webhookId": "3619159b-1439-4818-b31a-a949a811d24f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=ℹ️ Как отправить отчёт\n\n1. Нажмите «➕ Новый отчёт»\n2. Отправьте фото одним альбомом\n3. Текст отчёта укажите в подписи к фото\n\nОбязательные фото:\n\n1. До процедуры — две руки\n2. До процедуры — большие пальцы\n\n3. После снятия — первая рука\n4. После снятия — вторая рука\n5. После снятия — большие пальцы\n\n6. После покрытия — две руки\n7. После покрытия — большие пальцы\n8. Фото покрытия / цвета / номера лака\n\n<blockquote expandable>Пример текста отчёта:\n\nЖП\nМария Ф.\nЕкатерина Комелутина\n\nДо — наше покрытие, носка 4 недели, есть отслойки\n\nПосле снятия ногтевая пластина без повреждений\nБаза Sota\nРемонтов нет\nПокрытие Luxio 182\n\n70 минут</blockquote>\n\nМожно писать без слов «Студия», «Мастер», «Клиент»\n\nГлавное:\n• 1 строка — студия\n• 2 строка — мастер\n• 3 строка — клиент\n• дальше описание процедуры\n• в конце время",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        464
+      ],
+      "id": "b4facd73-e707-4224-868a-34b9463fe5ce",
+      "name": "Send report instructions",
+      "webhookId": "27a64ef1-3599-4597-b5a5-88f783dfefa2",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "file": "AgACAgIAAxkBAANhakewEQ10ZJuGbVAG8KuYo_AWhmUAAtojaxvwo0BKBulY3ghh3mcBAAMCAAN4AAM8BA",
+        "additionalFields": {
+          "caption": "=Пример правильно оформленного отчёта\n\nЖар-Птица\nАнастасия Л.\nПолина Лутошкина\n\nДо процедуры:\nПокрытие другого салона\nСрок носки — 3 недели\nСостояние покрытия: небольшие отслойки на указательных пальцах\nНогтевая пластина очень тонкая, уголки скручиваются\n\nПосле снятия:\nНогтевая пластина без повреждений\nРаботали базой: [название базы]\nРемонты: не выполнялись\nПокрытие: [номер или название гель-лака]\n\nДополнительно:\nОт моделирования клиент отказался, рекомендовано выполнить при следующем посещении\n\nВремя выполнения услуги: 110 минут"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        464
+      ],
+      "id": "9541c3db-9539-4eb5-a5b5-67ecd2ca330f",
+      "name": "Send good report example",
+      "webhookId": "6ab84cef-cc72-4908-844a-071b5d4f8508",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Отправляйте фотографии одним альбомом, а текст отчёта добавляйте в подпись к нему\n\nКогда будете готовы, нажмите «➕ Новый отчёт»",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        464
+      ],
+      "id": "1abac4a6-6352-46b1-87a3-70ac8cc41a2b",
+      "name": "Finish report instructions",
+      "webhookId": "8a15cf5e-c2c4-485c-8764-9b438a472591",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "=✏️ Отправьте одним текстовым сообщением недостающие данные\n\nМожно написать только дополнение — повторно отправлять фотографии и весь отчёт не нужно",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        656
+      ],
+      "id": "bd65ee42-4e53-4227-b1b0-e4281f4710be",
+      "name": "Попросить дополнить отчёт",
+      "webhookId": "f6bdba25-46d6-4cef-b610-95d79d517368",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cOX9QDXxO1334szv",
+          "mode": "list",
+          "cachedResultName": "tg_reports_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/cOX9QDXxO1334szv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_key",
+              "keyValue": "={{ $json.report_key }}"
+            }
+          ]
+        },
+        "limit": 1,
+        "orderBy": true,
+        "orderByColumn": "assembled_at"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        1040
+      ],
+      "id": "07c89bbf-736c-4f3b-bdcb-18d4131626b7",
+      "name": "Найти отчёт для дополнения"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json\n\nconst incoming = $('Determine incoming action').first().json\nconst newText = String(incoming.incoming_text ?? '').trim()\n\nconst oldCaption = String(report.caption ?? '').trim()\nconst oldSupplement = String(report.supplement_text ?? '').trim()\n\nconst combinedCaption = [oldCaption, newText]\n  .filter(Boolean)\n  .join('\\n\\nДополнение:\\n')\n\nconst combinedSupplement = [oldSupplement, newText]\n  .filter(Boolean)\n  .join('\\n\\n')\n\nconst text = combinedCaption\n\nconst lines = text\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .filter(Boolean)\n\nconst missing = []\n\n// Студия: ЖП, ГА, ГО, СЧ, РО или полное название\nconst hasStudio =\n  /(^|[\\s\\n.,;:—-])(жп|га|го|сч|ро)($|[\\s\\n.,;:—-])/iu.test(text) ||\n  /жар[\\s-]*птиц|жарптиц|гагаринск|гагарина|горького|горкого|счастье|родионова/iu.test(text)\n\nif (!hasStudio) {\n  missing.push('студия')\n}\n\n// Мастер: можно «Мария Ф.» или «Мастер: Мария Ф.»\nconst hasMaster =\n  /(?:^|\\n)\\s*мастер\\s*[:\\-]?\\s*[А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?\\s*(?:\\n|$)/iu.test(text) ||\n  lines.some(line =>\n    /^[А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?$/u.test(line)\n  )\n\nif (!hasMaster) {\n  missing.push('имя мастера и первая буква фамилии')\n}\n\n// Клиент: можно имя + фамилия или только имя\nconst hasClient =\n  /(?:^|\\n)\\s*клиент\\s*[:\\-]?\\s*[А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?\\s*(?:\\n|$)/iu.test(text) ||\n  (\n    lines.length >= 3 &&\n    /^[А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?$/u.test(lines[2])\n  )\n\nif (!hasClient) {\n  missing.push('имя клиента')\n}\n\n// База\nconst hasBase =\n  /работали\\s+базой|базой\\s*[:\\-]?\\s*\\S+|база\\s*[:\\-]?\\s*\\S+/iu.test(text)\n\nif (!hasBase) {\n  missing.push('название базы')\n}\n\n// Ремонты\nconst hasRepairs =\n  /ремонт|ремонты|ремонтов/iu.test(text)\n\nif (!hasRepairs) {\n  missing.push('информация о ремонтах')\n}\n\n// Итоговое покрытие / цвет / лак\nconst hasFinalCoverage =\n  /(?:покрытие|цвет|лак|гель[\\s-]*лак)\\s*[:\\-]?\\s*(?!наше\\b|другого\\b|другой\\b|салона\\b)\\S+/iu.test(text) ||\n  /luxio|люксио|art[\\s-]*ex|artex|артекс/iu.test(text)\n\nif (!hasFinalCoverage) {\n  missing.push('номер или название покрытия / цвета')\n}\n\n// Время: 70 минут, 70 мин, 1 час, 1 час 20 минут, 1,5 часа, полтора часа\nconst hasDuration =\n  /\\d+[,.]?\\d*\\s*(?:минут|минута|минуты|мин\\.?|м\\.?|час|часа|часов|ч\\.?)/iu.test(text) ||\n  /полтора\\s+часа/iu.test(text)\n\nif (!hasDuration) {\n  missing.push('время выполнения услуги')\n}\n\nconst isValid = missing.length === 0\n\nreturn [\n  {\n    json: {\n      ...report,\n\n      caption: combinedCaption,\n      supplement_text: combinedSupplement,\n\n      text_is_valid: isValid,\n      validation_status: isValid ? 'valid' : 'awaiting_text',\n      missing_fields_text: missing.join(', '),\n\n      validation_message: isValid\n        ? '✅ Спасибо, отчёт дополнен и сохранён'\n        : `В отчёте всё ещё не хватает данных:\\n\\n${missing\n            .map(field => `• ${field}`)\n            .join('\\n')}\\n\\nОтправьте недостающие данные ещё одним сообщением или нажмите «Не могу уточнить»`,\n    },\n  },\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        1040
+      ],
+      "id": "b31b9e53-8183-4069-8ba6-6afcc19ca2d6",
+      "name": "Добавить дополнение и проверить"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cOX9QDXxO1334szv",
+          "mode": "list",
+          "cachedResultName": "tg_reports_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/cOX9QDXxO1334szv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_key",
+              "keyValue": "={{ $json.report_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "media_group_id",
+              "displayName": "media_group_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "photo_count",
+              "displayName": "photo_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "part_keys_json",
+              "displayName": "part_keys_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_ids_json",
+              "displayName": "file_ids_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_received_at",
+              "displayName": "first_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_received_at",
+              "displayName": "last_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "assembled_at",
+              "displayName": "assembled_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "validation_status",
+              "displayName": "validation_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "missing_fields_text",
+              "displayName": "missing_fields_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "supplement_text",
+              "displayName": "supplement_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        1040
+      ],
+      "id": "2f60ae57-765e-4fb4-9a85-c03a6e06878f",
+      "name": "Обновить отчёт после дополнения"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cb70d036-bf13-428b-8cc9-ca73e3e3a217",
+              "leftValue": "={{ $json.text_is_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        1040
+      ],
+      "id": "f2512477-bcaa-4284-844d-2e608dde7490",
+      "name": "После дополнения всё заполнено?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "✅ Спасибо, отчёт дополнен и сохранён",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        976
+      ],
+      "id": "819d180a-5dd3-4e4f-8da0-4c7b9ce5c14d",
+      "name": "Send a text message",
+      "webhookId": "23c4a7aa-8270-483e-9fe7-e56acfe8f27f",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.validation_message }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "⚠️ Не могу уточнить",
+                    "additionalFields": {
+                      "callback_data": "report_incomplete"
+                    }
+                  },
+                  {
+                    "text": "✏️ Дополнить ещё",
+                    "additionalFields": {
+                      "callback_data": "report_add_text"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        1136
+      ],
+      "id": "42798936-c3ae-43ec-acf0-154b98a66f63",
+      "name": "Send a text message1",
+      "webhookId": "5d1869ea-4ce6-4b12-9475-54b5e576250e",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cOX9QDXxO1334szv",
+          "mode": "list",
+          "cachedResultName": "tg_reports_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/cOX9QDXxO1334szv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_key",
+              "keyValue": "={{ $json.report_key }}"
+            }
+          ]
+        },
+        "limit": 1,
+        "orderBy": true,
+        "orderByColumn": "assembled_at"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        816
+      ],
+      "id": "5ed962ac-43d2-4ddf-951e-723268f13374",
+      "name": "Найти отчёт для сохранения неполным"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json\n\nreturn [\n  {\n    json: {\n      ...report,\n      validation_status: 'incomplete',\n      status: 'incomplete',\n      incomplete_at: new Date().toISOString(),\n\n      message_to_master:\n        `⚠️ Отчёт сохранён с недостающими данными\\n\\n` +\n        `Не удалось уточнить:\\n` +\n        String(report.missing_fields_text ?? '')\n          .split(',')\n          .map(item => item.trim())\n          .filter(Boolean)\n          .map(item => `• ${item}`)\n          .join('\\n') +\n        `\\n\\nПожалуйста, в следующих отчётах фиксируйте эти данные сразу`,\n    },\n  },\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        848
+      ],
+      "id": "7253e94a-35cd-4a6c-af18-949921ee5626",
+      "name": "Подготовить неполный отчёт"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cOX9QDXxO1334szv",
+          "mode": "list",
+          "cachedResultName": "tg_reports_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/cOX9QDXxO1334szv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_key",
+              "keyValue": "={{ $json.report_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "media_group_id",
+              "displayName": "media_group_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "photo_count",
+              "displayName": "photo_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "part_keys_json",
+              "displayName": "part_keys_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_ids_json",
+              "displayName": "file_ids_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_received_at",
+              "displayName": "first_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_received_at",
+              "displayName": "last_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "assembled_at",
+              "displayName": "assembled_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "validation_status",
+              "displayName": "validation_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "missing_fields_text",
+              "displayName": "missing_fields_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "supplement_text",
+              "displayName": "supplement_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        528,
+        848
+      ],
+      "id": "b96b923a-fe63-4d19-bd20-bab179c6af72",
+      "name": "Сохранить отчёт неполным"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.message_to_master }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        768
+      ],
+      "id": "fa9bfa77-b675-4e07-a3b8-008216d583a3",
+      "name": "Подтвердить неполный отчёт",
+      "webhookId": "def269f1-048a-46bd-a8de-4b22fc69f6c3",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $json\n\nconst chatId = String(report.chat_id ?? '')\nconst userId = String(report.user_id ?? '')\n\nreturn {\n  json: {\n    ...report,\n\n    session_key: `tg:${chatId}:user:${userId}`,\n    chat_id: chatId,\n    user_id: userId,\n    report_key: String(report.report_key ?? ''),\n    photo_count: Number(report.photo_count ?? 0),\n    status: 'closed',\n    updated_at: new Date().toISOString(),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        816
+      ],
+      "id": "2216f978-5b14-41e4-ba48-cb7bbbfeb499",
+      "name": "Подготовить закрытие сессии после неполного"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "updated_at": "={{ $json.updated_at }}",
+            "report_key": "== {{ $json.report_key }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_key",
+              "displayName": "session_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "started_at",
+              "displayName": "started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        944,
+        816
+      ],
+      "id": "c6d457a5-7449-481b-9fc4-4cd4691b38a3",
+      "name": "Закрыть сессию после неполного"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $json\n\nconst chatId = String(report.chat_id ?? '')\nconst userId = String(report.user_id ?? '')\n\nreturn {\n  json: {\n    ...report,\n\n    session_key: `tg:${chatId}:user:${userId}`,\n    chat_id: chatId,\n    user_id: userId,\n    report_key: String(report.report_key ?? ''),\n    photo_count: Number(report.photo_count ?? 0),\n    status: 'closed',\n    updated_at: new Date().toISOString(),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        976
+      ],
+      "id": "2d4c5d98-66cd-4dc2-be2b-2ece89e98b1c",
+      "name": "Подготовить закрытие сессии после дополнения"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "updated_at": "={{ $json.updated_at }}",
+            "report_key": "={{ $json.report_key }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_key",
+              "displayName": "session_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "started_at",
+              "displayName": "started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        976
+      ],
+      "id": "64f3c5a3-42cf-4df2-b113-0a69ebf7c04b",
+      "name": "Закрыть сессию после дополнения"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ `tg:${$json.chat_id}:user:${$json.user_id}` }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "awaiting_text"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        912
+      ],
+      "id": "3002ad7a-d93b-4c9a-874d-2dd089e856b8",
+      "name": "Найти сессию для дополнения"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ `tg:${$json.chat_id}:user:${$json.user_id}` }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "awaiting_text"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        48,
+        720
+      ],
+      "id": "9fcac993-5599-463e-a92e-58b0e53ac3bb",
+      "name": "Найти сессию для неполного отчёта"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Determine incoming action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Prepare report part",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare report part": {
+      "main": [
+        [
+          {
+            "node": "Save report part",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine incoming action": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Prepare photo session check1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send start menu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send report instructions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Попросить дополнить отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Найти сессию для неполного отчёта",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Найти сессию для дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Open report session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open report session": {
+      "main": [
+        [
+          {
+            "node": "Confirm report session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare photo session check1": {
+      "main": [
+        [
+          {
+            "node": "Check active report session",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "No active report session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check active report session": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No active report session": {
+      "main": [
+        [
+          {
+            "node": "Ask to start report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send report instructions": {
+      "main": [
+        [
+          {
+            "node": "Send good report example",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send good report example": {
+      "main": [
+        [
+          {
+            "node": "Finish report instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Найти отчёт для дополнения": {
+      "main": [
+        [
+          {
+            "node": "Добавить дополнение и проверить",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Добавить дополнение и проверить": {
+      "main": [
+        [
+          {
+            "node": "Обновить отчёт после дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Обновить отчёт после дополнения": {
+      "main": [
+        [
+          {
+            "node": "После дополнения всё заполнено?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "После дополнения всё заполнено?": {
+      "main": [
+        [
+          {
+            "node": "Подготовить закрытие сессии после дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Найти отчёт для сохранения неполным": {
+      "main": [
+        [
+          {
+            "node": "Подготовить неполный отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить неполный отчёт": {
+      "main": [
+        [
+          {
+            "node": "Сохранить отчёт неполным",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сохранить отчёт неполным": {
+      "main": [
+        [
+          {
+            "node": "Подготовить закрытие сессии после неполного",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить закрытие сессии после неполного": {
+      "main": [
+        [
+          {
+            "node": "Закрыть сессию после неполного",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Закрыть сессию после неполного": {
+      "main": [
+        [
+          {
+            "node": "Подтвердить неполный отчёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить закрытие сессии после дополнения": {
+      "main": [
+        [
+          {
+            "node": "Закрыть сессию после дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Закрыть сессию после дополнения": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Найти сессию для дополнения": {
+      "main": [
+        [
+          {
+            "node": "Найти отчёт для дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Найти сессию для неполного отчёта": {
+      "main": [
+        [
+          {
+            "node": "Найти отчёт для сохранения неполным",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "befda38f-2527-46b6-8bf1-a82609873be8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e551c76a05a81d16c75e88945c08cbfd3be255835803d514bc6d9feaf17c375c"
+  },
+  "nodeGroups": [],
+  "id": "KUAdCmxLYAxgLyLz",
+  "tags": []
+}

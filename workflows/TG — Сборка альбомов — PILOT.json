@@ -1,0 +1,1195 @@
+{
+  "name": "TG — Сборка альбомов — PILOT",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "5de4ca4e-e275-4322-8900-3f5366e9d807",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bkJEucmFZpr2GrMd",
+          "mode": "list",
+          "cachedResultName": "tg_report_parts_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/bkJEucmFZpr2GrMd"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "keyValue": "telegram_received"
+            },
+            {
+              "keyName": "is_album",
+              "condition": "isTrue"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "2306e186-8d0d-4a6b-9ac0-72a8bc292347",
+      "name": "Get pending album parts"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(item => item.json)\n\nconst now = Date.now()\nconst quietPeriodMs = 10 * 1000\n\nconst groups = new Map()\n\nfor (const row of rows) {\n  if (!row.report_key) continue\n\n  if (!groups.has(row.report_key)) {\n    groups.set(row.report_key, [])\n  }\n\n  groups.get(row.report_key).push(row)\n}\n\nconst completedAlbums = []\n\nfor (const [reportKey, parts] of groups.entries()) {\n  parts.sort(\n    (a, b) => Number(a.message_id ?? 0) - Number(b.message_id ?? 0)\n  )\n\n  const receivedTimes = parts\n    .map(part => new Date(part.received_at).getTime())\n    .filter(Number.isFinite)\n\n  if (receivedTimes.length === 0) continue\n\n  const lastReceivedAt = Math.max(...receivedTimes)\n\n  // Если последнее фото пришло меньше 10 секунд назад,\n  // альбом пока считаем незавершённым\n  if (now - lastReceivedAt < quietPeriodMs) continue\n\n  const caption =\n    parts.find(\n      part =>\n        typeof part.caption === 'string' &&\n        part.caption.trim() !== ''\n    )?.caption.trim() ?? ''\n\n  const firstPart = parts[0]\n\n  completedAlbums.push({\n    json: {\n      report_key: reportKey,\n      chat_id: String(firstPart.chat_id ?? ''),\n      user_id: String(firstPart.user_id ?? ''),\n      media_group_id: String(firstPart.media_group_id ?? ''),\n      caption,\n      photo_count: parts.length,\npart_keys_json: JSON.stringify(\n  parts.map(part => part.part_key)\n),\nfile_ids_json: JSON.stringify(\n  parts.map(part => part.file_id)\n),\n      first_received_at: new Date(\n        Math.min(...receivedTimes)\n      ).toISOString(),\n      last_received_at: new Date(\n        lastReceivedAt\n      ).toISOString(),\n      assembled_at: new Date(now).toISOString(),\n      status: 'album_ready',\n    },\n  })\n}\n\nreturn completedAlbums"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ce6906cb-c4a6-4cc1-82d9-ae3e2b3c89ba",
+      "name": "Assemble quiet albums"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cOX9QDXxO1334szv",
+          "mode": "list",
+          "cachedResultName": "tg_reports_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/cOX9QDXxO1334szv"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "report_key",
+              "keyValue": "={{ $json.report_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "media_group_id",
+              "displayName": "media_group_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "photo_count",
+              "displayName": "photo_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "part_keys_json",
+              "displayName": "part_keys_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_ids_json",
+              "displayName": "file_ids_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "first_received_at",
+              "displayName": "first_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "last_received_at",
+              "displayName": "last_received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "assembled_at",
+              "displayName": "assembled_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        0
+      ],
+      "id": "e97bb553-3e98-41fa-9306-55657dd90e6d",
+      "name": "Save assembled report"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $input.first().json\n\nlet partKeys = []\n\ntry {\n  partKeys = JSON.parse(report.part_keys_json ?? '[]')\n} catch (error) {\n  throw new Error('Не удалось прочитать part_keys_json')\n}\n\nreturn partKeys.map(partKey => ({\n  json: {\n    part_key: partKey,\n    status: 'assembled',\n  },\n}))"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        144
+      ],
+      "id": "88743a09-3737-477f-abda-8d113765fcc0",
+      "name": "Prepare assembled part updates"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bkJEucmFZpr2GrMd",
+          "mode": "list",
+          "cachedResultName": "tg_report_parts_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/bkJEucmFZpr2GrMd"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "part_key",
+              "keyValue": "={{ $json.part_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "is_album": false,
+            "status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "part_key",
+              "displayName": "part_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "update_id",
+              "displayName": "update_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "media_group_id",
+              "displayName": "media_group_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_id",
+              "displayName": "file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_unique_id",
+              "displayName": "file_unique_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "file_size",
+              "displayName": "file_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "received_at",
+              "displayName": "received_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_url",
+              "displayName": "file_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "is_album",
+              "displayName": "is_album",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        144
+      ],
+      "id": "71c96df3-6da8-4365-a5b7-14f87ea8cd45",
+      "name": "Mark parts assembled"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const report = $json\n\nconst chatId = String(report.chat_id ?? '')\nconst userId = String(report.user_id ?? '')\n\nreturn {\n  json: {\n    session_key: `tg:${chatId}:user:${userId}`,\n    chat_id: chatId,\n    report_key: String(report.report_key ?? ''),\n    photo_count: Number(report.photo_count ?? 0),\n    status: 'closed',\n    updated_at: new Date().toISOString(),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        -256
+      ],
+      "id": "c17ac1b3-f0ed-4d06-920f-2af0e12a78fe",
+      "name": "Prepare session close"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "report_key": "={{ $json.report_key }}",
+            "updated_at": "={{ $json.updated_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_key",
+              "displayName": "session_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "started_at",
+              "displayName": "started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1824,
+        -256
+      ],
+      "id": "e7a2f2a1-0d7a-45f3-827f-725c6ab6ba22",
+      "name": "Close report session"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Prepare session close').item.json.chat_id }}",
+        "text": "=Отчёт сохранён ✅  \n\nПолучено фотографий: {{ $('Prepare session close').item.json.photo_count }}  \n\nЕсли нужно отправить следующий отчёт, нажмите «➕ Новый отчёт»",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2064,
+        -256
+      ],
+      "id": "124ecd96-7a75-47dd-a3d6-f48ec8acf9d1",
+      "name": "Confirm report saved",
+      "webhookId": "19d66332-79c9-4b26-8582-ec461ae6f920",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json\n\nconst text = String(item.caption ?? '').trim()\n\nconst lines = text\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .filter(Boolean)\n\nconst missing = []\n\nconst hasStudio =\n  /(^|[\\s\\n.,;:—-])(жп|га|го|сч|ро)($|[\\s\\n.,;:—-])/iu.test(text) ||\n  /жар[\\s-]*птиц|жарптиц|гагаринск|гагарина|горького|горкого|счастье|родионова/iu.test(text)\n\nif (!hasStudio) {\n  missing.push('студия')\n}\n\nconst hasMaster =\n  /(?:^|\\n)\\s*мастер\\s*[:\\-]?\\s*[А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?\\s*(?:\\n|$)/iu.test(text) ||\n  lines.some(line =>\n    /^[А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?$/u.test(line)\n  )\n\nif (!hasMaster) {\n  missing.push('имя мастера и первая буква фамилии')\n}\n\nconst hasClient =\n  /(?:^|\\n)\\s*клиент\\s*[:\\-]?\\s*[А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?\\s*(?:\\n|$)/iu.test(text) ||\n  (\n    lines.length >= 3 &&\n    /^[А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?$/u.test(lines[2])\n  )\n\nif (!hasClient) {\n  missing.push('имя клиента')\n}\n\nconst hasBase =\n  /работали\\s+базой|базой\\s*[:\\-]?\\s*\\S+|база\\s*[:\\-]?\\s*\\S+/iu.test(text)\n\nif (!hasBase) {\n  missing.push('название базы')\n}\n\nconst hasRepairs =\n  /ремонт|ремонты|ремонтов/iu.test(text)\n\nif (!hasRepairs) {\n  missing.push('информация о ремонтах')\n}\n\nconst hasFinalCoverage =\n  /(?:покрытие|цвет|лак)\\s*[:\\-]?\\s*(?!наше\\b|другого\\b|другой\\b|салона\\b)\\S+/iu.test(text) ||\n  /luxio|art-ex|artex|sota|neicha/iu.test(text)\n\nif (!hasFinalCoverage) {\n  missing.push('номер или название покрытия / цвета')\n}\n\nconst hasDuration =\n  /\\d+[,.]?\\d*\\s*(?:минут|минута|минуты|мин\\.?|м\\.?|час|часа|часов|ч\\.?)/iu.test(text) ||\n  /полтора\\s+часа/iu.test(text)\n\nif (!hasDuration) {\n  missing.push('время выполнения услуги')\n}\n\nconst isValid = missing.length === 0\n\nreturn [\n  {\n    json: {\n      ...item,\n      text_is_valid: isValid,\n      missing_fields_text: missing.join(', '),\n      validation_status: isValid\n        ? 'valid'\n        : 'awaiting_text',\n\n      validation_message: isValid\n        ? '✅ Отчёт заполнен полностью'\n        : `Отчёт и фотографии получены, но в тексте не хватает данных:\\n\\n${missing\n            .map(field => `• ${field}`)\n            .join('\\n')}\\n\\nОтправьте недостающие данные следующим сообщением. Повторно отправлять фотографии не нужно`,\n    },\n  },\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "c7806cbc-3221-4085-b9d1-2d3d8e19521b",
+      "name": "Проверка текста отчёта"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c803040-89a0-4e0f-9b0b-ad75053bf61f",
+              "leftValue": "={{ $json.text_is_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -112
+      ],
+      "id": "7ec16c73-75ed-4a54-b200-56b2a9162af8",
+      "name": "Все данные указаны?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Подготовить ожидание дополнения').first().json.chat_id }}",
+        "text": "={{ $('Подготовить ожидание дополнения').first().json.validation_message }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✏️ Дополнить отчёт",
+                    "additionalFields": {
+                      "callback_data": "report_add_text"
+                    }
+                  },
+                  {
+                    "text": "⚠️ Не могу уточнить",
+                    "additionalFields": {
+                      "callback_data": "report_incomplete"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1872,
+        -96
+      ],
+      "id": "4b8c4beb-8a5f-4d81-a4fa-0bfd262c56c9",
+      "name": "Запросить недостающие данные",
+      "webhookId": "19d8050d-625e-41b5-b747-1d167e3639f8",
+      "credentials": {
+        "telegramApi": {
+          "id": "gxyIzvclMd9jaUHZ",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $json\n\nconst chatId = String(report.chat_id ?? '')\nconst userId = String(report.user_id ?? '')\n\nreturn {\n  json: {\n    ...report,\n\n    session_key: `tg:${chatId}:user:${userId}`,\n    chat_id: chatId,\n    user_id: userId,\n    report_key: String(report.report_key ?? ''),\n    status: 'awaiting_text',\n    updated_at: new Date().toISOString(),\n  },\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        -112
+      ],
+      "id": "7c00403c-ec68-4212-8083-43f92099d82d",
+      "name": "Подготовить ожидание дополнения"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "hhdJ6GdtK55u4tSL",
+          "mode": "list",
+          "cachedResultName": "tg_report_sessions_pilot",
+          "cachedResultUrl": "/projects/gVrnPxUuJoHNHJCW/datatables/hhdJ6GdtK55u4tSL"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "session_key",
+              "keyValue": "={{ $json.session_key }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "={{ $json.status }}",
+            "report_key": "={{ $json.report_key }}",
+            "updated_at": "={{ $json.updated_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "session_key",
+              "displayName": "session_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "started_at",
+              "displayName": "started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "expires_at",
+              "displayName": "expires_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        -112
+      ],
+      "id": "d522c21b-7e9b-4943-8fce-5d6ba610cbea",
+      "name": "Записать report_key в сессию"
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = $json\n\nconst text = String(report.caption ?? report.report_text ?? '').trim()\n\nconst lines = text\n  .split(/\\r?\\n/)\n  .map(line => line.trim())\n  .filter(Boolean)\n\nconst normalize = value =>\n  String(value ?? '')\n    .toLowerCase()\n    .replace(/ё/g, 'е')\n    .replace(/[—–]/g, '-')\n    .replace(/\\s+/g, ' ')\n    .trim()\n\nconst normalizedText = normalize(text)\n\nconst detectStudio = () => {\n  if (/(^|[\\s\\n.,;:—-])жп($|[\\s\\n.,;:—-])|жар[\\s-]*птиц|жарптиц/iu.test(text)) {\n    return 'Жар-Птица'\n  }\n\n  if (/(^|[\\s\\n.,;:—-])га($|[\\s\\n.,;:—-])|гагаринск|гагарина/iu.test(text)) {\n    return 'Гагаринский'\n  }\n\n  if (/(^|[\\s\\n.,;:—-])го($|[\\s\\n.,;:—-])|горького|горкого/iu.test(text)) {\n    return 'Горького'\n  }\n\n  if (/(^|[\\s\\n.,;:—-])сч($|[\\s\\n.,;:—-])|счастье/iu.test(text)) {\n    return 'Счастье'\n  }\n\n  if (/(^|[\\s\\n.,;:—-])ро($|[\\s\\n.,;:—-])|родионова/iu.test(text)) {\n    return 'Родионова'\n  }\n\n  return ''\n}\n\nconst extractMaster = () => {\n  const byLabel = text.match(/(?:^|\\n)\\s*мастер\\s*[:\\-]?\\s*([А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?)\\s*(?:\\n|$)/iu)\n  if (byLabel?.[1]) return byLabel[1].trim()\n\n  const line = lines.find(line =>\n    /^[А-ЯЁ][а-яё-]+\\s+[А-ЯЁ]\\.?$/u.test(line)\n  )\n\n  return line ?? ''\n}\n\nconst extractClient = () => {\n  const byLabel = text.match(/(?:^|\\n)\\s*клиент\\s*[:\\-]?\\s*([А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?)\\s*(?:\\n|$)/iu)\n  if (byLabel?.[1]) return byLabel[1].trim()\n\n  if (\n    lines.length >= 3 &&\n    /^[А-ЯЁ][а-яё-]+(?:\\s+[А-ЯЁ][а-яё-]+)?$/u.test(lines[2])\n  ) {\n    return lines[2]\n  }\n\n  return ''\n}\n\nconst extractDuration = () => {\n  const match =\n    text.match(/\\d+[,.]?\\d*\\s*(?:минут|минута|минуты|мин\\.?|м\\.?|час|часа|часов|ч\\.?)/iu) ||\n    text.match(/полтора\\s+часа/iu)\n\n  return match?.[0]?.trim() ?? ''\n}\n\nconst now = new Date().toISOString()\n\nconst statusText =\n  report.validation_status === 'valid'\n    ? '✅ Полный'\n    : report.validation_status === 'incomplete'\n      ? '⚠️ Неполный'\n      : report.validation_status === 'awaiting_text'\n        ? '⏳ Ждёт дополнение'\n        : String(report.validation_status ?? '')\n\nreturn [\n  {\n    json: {\n      ...report,\n\n      'Дата создания': String(report.assembled_at ?? now),\n      'Дата обновления': now,\n      'Статус': statusText,\n      'Студия': detectStudio(),\n      'Мастер': extractMaster(),\n      'Клиент': extractClient(),\n      'Количество фото': Number(report.photo_count ?? 0),\n      'Текст отчёта': text,\n      'Недостающие данные': String(report.missing_fields_text ?? ''),\n      'Время выполнения': extractDuration(),\n      'report_key': String(report.report_key ?? ''),\n      'chat_id': String(report.chat_id ?? ''),\n      'user_id': String(report.user_id ?? ''),\n      'raw_file_ids': String(report.file_ids_json ?? ''),\n    },\n  },\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -272
+      ],
+      "id": "9414d3aa-dfaa-4efb-a30e-1d424e5a682b",
+      "name": "Подготовить строку Google Sheets"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1RQfHMKknHJogVGvH0fbFN_mcg869d7OCoSWg5MhTkPg",
+          "mode": "list",
+          "cachedResultName": "БОГЕЛИКА | Отчёты мастеров — PILOT",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RQfHMKknHJogVGvH0fbFN_mcg869d7OCoSWg5MhTkPg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Все отчёты",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1RQfHMKknHJogVGvH0fbFN_mcg869d7OCoSWg5MhTkPg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата создания": "={{ $json[\"Дата создания\"] }}",
+            "Дата обновления": "={{ $json[\"Дата обновления\"] }}",
+            "Статус": "={{ $json[\"Статус\"] }}",
+            "Студия": "={{ $json[\"Студия\"] }}",
+            "Мастер": "={{ $json[\"Мастер\"] }}",
+            "Клиент": "={{ $json[\"Клиент\"] }}",
+            "Количество фото": "={{ $json[\"Количество фото\"] }}",
+            "Текст отчёта": "={{ $json[\"Текст отчёта\"] }}",
+            "Недостающие данные": "={{ $json[\"Недостающие данные\"] }}",
+            "Время выполнения": "={{ $json[\"Время выполнения\"] }}",
+            "report_key": "={{ $json[\"report_key\"] }}",
+            "chat_id": "={{ $json[\"chat_id\"] }}",
+            "user_id": "={{ $json[\"user_id\"] }}",
+            "raw_file_ids": "={{ $json[\"raw_file_ids\"] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Дата создания",
+              "displayName": "Дата создания",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Дата обновления",
+              "displayName": "Дата обновления",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Статус",
+              "displayName": "Статус",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Студия",
+              "displayName": "Студия",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Мастер",
+              "displayName": "Мастер",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Клиент",
+              "displayName": "Клиент",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Количество фото",
+              "displayName": "Количество фото",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Текст отчёта",
+              "displayName": "Текст отчёта",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Недостающие данные",
+              "displayName": "Недостающие данные",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Время выполнения",
+              "displayName": "Время выполнения",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "report_key",
+              "displayName": "report_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_file_ids",
+              "displayName": "raw_file_ids",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1312,
+        -400
+      ],
+      "id": "a1a15683-5a10-4fb9-b1f8-d367704821e1",
+      "name": "Добавить строку в Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GLDFLhGaSEjkaxNl",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get pending album parts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get pending album parts": {
+      "main": [
+        [
+          {
+            "node": "Assemble quiet albums",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble quiet albums": {
+      "main": [
+        [
+          {
+            "node": "Проверка текста отчёта",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save assembled report": {
+      "main": [
+        [
+          {
+            "node": "Prepare assembled part updates",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Все данные указаны?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare assembled part updates": {
+      "main": [
+        [
+          {
+            "node": "Mark parts assembled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare session close": {
+      "main": [
+        [
+          {
+            "node": "Close report session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close report session": {
+      "main": [
+        [
+          {
+            "node": "Confirm report saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проверка текста отчёта": {
+      "main": [
+        [
+          {
+            "node": "Save assembled report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Все данные указаны?": {
+      "main": [
+        [
+          {
+            "node": "Подготовить строку Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Подготовить ожидание дополнения",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить ожидание дополнения": {
+      "main": [
+        [
+          {
+            "node": "Записать report_key в сессию",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Записать report_key в сессию": {
+      "main": [
+        [
+          {
+            "node": "Запросить недостающие данные",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Подготовить строку Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Добавить строку в Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare session close",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Добавить строку в Google Sheets": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0c2ff087-0d37-4644-95f5-7ddae674f56a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e551c76a05a81d16c75e88945c08cbfd3be255835803d514bc6d9feaf17c375c"
+  },
+  "nodeGroups": [],
+  "id": "IJXuZrPCcWpo3zk0",
+  "tags": []
+}
