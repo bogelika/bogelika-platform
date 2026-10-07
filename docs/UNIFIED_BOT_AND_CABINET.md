@@ -4,6 +4,8 @@
 
 Статус: **проектирование → поэтапная реализация**
 
+**Важно:** боевой бот делаем как **приложение в репозитории + деплой на сервер**, а не как новые workflow в n8n. Папка `workflows/` в GitHub — архив/референс; источник правды для запуска — код, который ты публикуешь на GitHub и обновляешь на сервере (см. [HOW_WE_WORK.md](./HOW_WE_WORK.md)).
+
 ---
 
 ## Зачем
@@ -55,17 +57,18 @@
 Telegram (один Bot Token)
         │
         ▼
-n8n: TG — БОГЕЛИКА мастера — PILOT (единый workflow)
+Приложение бота на сервере (код из GitHub)
         │
-        ├── Адаптер: разбор update → route + user context
-        ├── Проверка доступа (staff_directory)
+        ├── Telegram long polling / webhook
+        ├── Маршрутизация: отчёт | поиск | кабинет
+        ├── Проверка доступа (staff_directory в БД)
         │
-        ├── route: report_*  → существующие subflow / ноды отчёта
-        ├── route: search_*  → subflow поиска (tg_reports_pilot)
-        └── route: cabinet_* → WebApp init data / webhook API
+        ├── модуль отчётов (логика как в PILOT)
+        ├── модуль поиска (фильтры — code/access-and-search.js)
+        └── API для Mini App / кабинета
         │
         ▼
-Data Tables (+ позже Google Sheets / Drive только как витрина)
+База на сервере (+ Google Sheets / Drive как витрина)
 ```
 
 **Отдельный бот поиска** после миграции:

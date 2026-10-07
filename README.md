@@ -17,13 +17,17 @@ AI-платформа автоматизации сети студий крас�
 
 См. [docs/UNIFIED_BOT_AND_CABINET.md](docs/UNIFIED_BOT_AND_CABINET.md)
 
-## Структура проекта
+## Как мы работаем
 
-/workflows — экспортированные workflow n8n
+См. [docs/HOW_WE_WORK.md](docs/HOW_WE_WORK.md) — ты публикуешь на GitHub, затем обновляешь на сервере.
+
+## Структура проекта
 
 /docs — документация проекта
 
-/code — JavaScript-код из Code-нод
+/code — JavaScript-модули (логика бота)
+
+/workflows — архив экспортов n8n (референс, не обязательно боевой запуск)
 
 /examples — примеры отчетов
 
