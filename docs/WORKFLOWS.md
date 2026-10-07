@@ -45,6 +45,31 @@
 
 ---
 
+## TG — БОГЕЛИКА мастера — PILOT (планируется)
+
+Единый Telegram-бот: текущий «Приём отчётов» + поиск + кабинет.
+
+Функции (новые):
+
+- проверка доступа по `staff_directory_pilot`
+- «🔍 Мои отчёты» — subflow поиска в `tg_reports_pilot`
+- «👤 Кабинет» — открытие Mini App
+- режим сессии `mode: search`
+
+Спецификация: [UNIFIED_BOT_AND_CABINET.md](./UNIFIED_BOT_AND_CABINET.md)
+
+---
+
+## Cabinet API — PILOT (планируется)
+
+Webhook для Telegram Mini App (и позже веб-кабинета):
+
+- `me` — профиль и роль
+- `my-reports` — список с фильтрами
+- `staff-list` / `staff-update-status` — для admin/manager
+
+---
+
 ## Планируемые workflow
 
 Google Drive
